@@ -15,7 +15,7 @@ static int parse_int(const char *text, int32_t *value) {
 
 int main(int argc, char **argv) {
     if (argc != 6) {
-        fprintf(stderr, "Usage: %s <world> <chunkX1> <chunkZ1> <chunkX2> <chunkZ2>", argv[0]);
+        fprintf(stderr, "Usage: %s <world> <chunkX1> <chunkZ1> <chunkX2> <chunkZ2>\n", argv[0]);
 
         return 0;
     }
@@ -26,7 +26,7 @@ int main(int argc, char **argv) {
     int32_t z2;
 
     if (!parse_int(argv[2], &x1) || !parse_int(argv[3], &z1) || !parse_int(argv[4], &x2) || !parse_int(argv[5], &z2)) {
-        fprintf(stderr, "Invalid chunk coordinate.");
+        fprintf(stderr, "Invalid chunk coordinate!\n");
 
         return 0;
     }
