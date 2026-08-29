@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 enum {
     TAG_END = 0,
@@ -41,6 +42,23 @@ static int read_i32(NbtReader *r, int32_t *value) {
 
     r -> pos += 4;
     *value = (int32_t) v;
+
+    return 1;
+}
+
+// read an NBT string into a fixed buffer.
+static int read_string(NbtReader *r, char *out, size_t capacity) {
+    if (!has(r, 2)) return 0;
+
+    uint16_t len = ((uint16_t) r -> data[r -> pos] << 8) | r -> data[r -> pos + 1];
+
+    r -> pos += 2;
+
+    if (!has(r, len) || len >= capacity) return 0;
+    memcpy(out, r -> data + r -> pos, len);
+
+    out[len] = '\0';
+    r -> pos += len;
 
     return 1;
 }
