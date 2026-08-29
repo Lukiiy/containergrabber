@@ -38,10 +38,10 @@ static int read_u8(NbtReader *r, uint8_t *value) {
 static int read_i32(NbtReader *r, int32_t *value) {
     if (!has(r, 4)) return 0;
 
-    uint32_t v = ((uint32_t) r -> data[r -> pos] << 24) | ((uint32_t) r -> data[r -> pos + 1] << 16) | ((uint32_t) r -> data[r -> pos + 2] << 8) | ((uint32_t) r -> data[r -> pos + 3]);
+    uint32_t rawValue = ((uint32_t) r -> data[r -> pos] << 24) | ((uint32_t) r -> data[r -> pos + 1] << 16) | ((uint32_t) r -> data[r -> pos + 2] << 8) | ((uint32_t) r -> data[r -> pos + 3]); // assemble a 32-bit big-endian integer from 4 sequential bytes
 
     r -> pos += 4;
-    *value = (int32_t) v;
+    *value = (int32_t) rawValue;
 
     return 1;
 }
@@ -50,7 +50,7 @@ static int read_i32(NbtReader *r, int32_t *value) {
 static int read_string(NbtReader *r, char *out, size_t capacity) {
     if (!has(r, 2)) return 0;
 
-    uint16_t len = ((uint16_t) r -> data[r -> pos] << 8) | r -> data[r -> pos + 1];
+    uint16_t len = ((uint16_t) r -> data[r -> pos] << 8) | r -> data[r -> pos + 1]; // read the 16-bit big-endian string length header
 
     r -> pos += 2;
 
