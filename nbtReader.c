@@ -57,7 +57,7 @@ static int read_string(NbtReader *r, char *out, size_t capacity) {
     if (!has(r, len) || len >= capacity) return 0;
     memcpy(out, r -> data + r -> pos, len);
 
-    out[len] = '\0';
+    out[len] = '\0'; // null-terminator byte fire emoji
     r -> pos += len;
 
     return 1;
