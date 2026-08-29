@@ -62,3 +62,95 @@ static int read_string(NbtReader *r, char *out, size_t capacity) {
 
     return 1;
 }
+
+// skip an NBT string without copying it
+static int skip_string(NbtReader *reader) {
+    if (!has(reader, 2)) return 0;
+
+    uint16_t len = ((uint16_t) reader -> data[reader -> pos] << 8) | reader -> data[reader -> pos + 1]; // big endian string byte length
+
+    reader -> pos += 2;
+
+    if (!has(reader, len)) return 0;
+    reader -> pos += len;
+
+    return 1;
+}
+
+static int skip_payload(NbtReader *reader, uint8_t type);
+
+// skip every tag inside a compound
+static int skip_compound(NbtReader *reader) {
+    for (;;) {
+        uint8_t type;
+
+        if (!read_u8(reader, &type)) return 0;
+
+        if (type == TAG_END) return 1;
+
+        if (!skip_string(reader) || !skip_payload(reader, type)) return 0;
+    }
+}
+
+// skip every element of an NBT list
+static int skip_list(NbtReader *reader) {
+    uint8_t type;
+    int32_t count;
+
+    if (!read_u8(reader, &type) || !read_i32(reader, &count) || count < 0) return 0;
+
+    for (int32_t i = 0; i < count; ++i) {
+        if (!skip_payload(reader, type)) return 0;
+    }
+
+    return 1;
+}
+
+// skip a payload based on its tag type
+static int skip_payload(NbtReader *reader, uint8_t type) {
+    size_t size;
+
+    switch (type) {
+        case TAG_BYTE:
+            size = 1;
+            break;
+        case TAG_SHORT:
+            size = 2;
+            break;
+        case TAG_FLOAT:
+        case TAG_INT:
+            size = 4;
+            break;
+        case TAG_DOUBLE:
+        case TAG_LONG:
+            size = 8;
+            break;
+        case TAG_STRING:
+            return skip_string(reader);
+        case TAG_LIST:
+            return skip_list(reader);
+        case TAG_COMPOUND:
+            return skip_compound(reader);
+        case TAG_BYTE_ARRAY:
+        case TAG_INT_ARRAY:
+        case TAG_LONG_ARRAY: {
+            int32_t count;
+            size_t objSize = type == TAG_BYTE_ARRAY ? 1 : type == TAG_INT_ARRAY ? 4 : 8;
+
+            if (!read_i32(reader, &count) || count < 0) return 0;
+            size = (size_t) count * objSize;
+
+            if (!has(reader, size)) return 0;
+
+            reader -> pos += size;
+            return 1;
+        }
+
+        default: return 0;
+    }
+
+    if (!has(reader, size)) return 0;
+
+    reader -> pos += size;
+    return 1;
+}
