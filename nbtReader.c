@@ -21,44 +21,44 @@ enum {
 };
 
 // Check that n bytes are still available
-static int has(NbtReader *r, size_t n) {
-    return n <= r -> size - r -> pos;
+static int has(NbtReader *reader, size_t n) {
+    return n <= reader -> size - reader -> pos;
 }
 
 // Read one byte from the NBT stream
-static int read_u8(NbtReader *r, uint8_t *value) {
-    if (!has(r, 1)) return 0;
+static int read_u8(NbtReader *reader, uint8_t *value) {
+    if (!has(reader, 1)) return 0;
 
-    *value = r -> data[r -> pos++];
+    *value = reader -> data[reader -> pos++];
 
     return 1;
 }
 
 // Read a big-endian NBT int
-static int read_i32(NbtReader *r, int32_t *value) {
-    if (!has(r, 4)) return 0;
+static int read_i32(NbtReader *reader, int32_t *value) {
+    if (!has(reader, 4)) return 0;
 
-    uint32_t rawValue = ((uint32_t) r -> data[r -> pos] << 24) | ((uint32_t) r -> data[r -> pos + 1] << 16) | ((uint32_t) r -> data[r -> pos + 2] << 8) | ((uint32_t) r -> data[r -> pos + 3]); // assemble a 32-bit big-endian integer from 4 sequential bytes
+    uint32_t rawValue = ((uint32_t) reader -> data[reader -> pos] << 24) | ((uint32_t) reader -> data[reader -> pos + 1] << 16) | ((uint32_t) reader -> data[reader -> pos + 2] << 8) | ((uint32_t) reader -> data[reader -> pos + 3]); // assemble a 32-bit big-endian integer from 4 sequential bytes
 
-    r -> pos += 4;
+    reader -> pos += 4;
     *value = (int32_t) rawValue;
 
     return 1;
 }
 
 // read an NBT string into a fixed buffer.
-static int read_string(NbtReader *r, char *out, size_t capacity) {
-    if (!has(r, 2)) return 0;
+static int read_string(NbtReader *reader, char *out, size_t capacity) {
+    if (!has(reader, 2)) return 0;
 
-    uint16_t len = ((uint16_t) r -> data[r -> pos] << 8) | r -> data[r -> pos + 1]; // read the 16-bit big-endian string length header
+    uint16_t len = ((uint16_t) reader -> data[reader -> pos] << 8) | reader -> data[reader -> pos + 1]; // read the 16-bit big-endian string length header
 
-    r -> pos += 2;
+    reader -> pos += 2;
 
-    if (!has(r, len) || len >= capacity) return 0;
-    memcpy(out, r -> data + r -> pos, len);
+    if (!has(reader, len) || len >= capacity) return 0;
+    memcpy(out, reader -> data + reader -> pos, len);
 
     out[len] = '\0'; // null-terminator byte fire emoji
-    r -> pos += len;
+    reader -> pos += len;
 
     return 1;
 }
