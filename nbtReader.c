@@ -192,7 +192,9 @@ static int readBlockEntity(NbtReader *reader, char *id, size_t idSize, int32_t *
         }
     }
 
-    return hasId && hasX && hasY && hasZ;
+    if (!hasId || !hasX || !hasY || !hasZ) return 0;
+
+    return 1;
 }
 
 // read block entities thingy and send each entry to the callback
@@ -200,7 +202,8 @@ static int readBlockEntityList(NbtReader *reader, BlockEntityCallback callback, 
     uint8_t objType;
     int32_t count;
 
-    if (!read_u8(reader, &objType) || !read_i32(reader, &count) || objType != TAG_COMPOUND || count < 0) return 0;
+    if (!read_u8(reader, &objType) || !read_i32(reader, &count) || count < 0) return 0;
+    if (count > 0 && objType != TAG_COMPOUND) return 0;
 
     for (int32_t i = 0; i < count; ++i) {
         char id[128];
