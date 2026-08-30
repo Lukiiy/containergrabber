@@ -36,6 +36,10 @@ static uint32_t read_u32(FILE *file) {
     return ((uint32_t) b[0] << 24) | ((uint32_t) b[1] << 16) | ((uint32_t) b[2] << 8) | b[3]; // please
 }
 
+static uint32_t read_le32(const unsigned char *data) {
+    return (uint32_t) data[0] | ((uint32_t) data[1] << 8) | ((uint32_t) data[2] << 16) | ((uint32_t) data[3] << 24);
+}
+
 // decompress zlib/gzip data into a buffer that can be expanded TODO
 static int inflateData(const unsigned char *input, size_t inputSize, int gzip, unsigned char **output, size_t *outputSize) {
     z_stream stream = {0};
