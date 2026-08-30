@@ -154,3 +154,88 @@ static int skip_payload(NbtReader *reader, uint8_t type) {
     reader -> pos += size;
     return 1;
 }
+
+// read one block entity and extract its id and position
+static int readBlockEntity(NbtReader *reader, char *id, size_t idSize, int32_t *x, int32_t *y, int32_t *z) {
+    int hasId = 0;
+    int hasX = 0;
+    int hasY = 0;
+    int hasZ = 0;
+
+    for (;;) {
+        uint8_t type;
+
+        if (!read_u8(reader, &type)) return 0;
+        if (type == TAG_END) break;
+
+        char name[64];
+        if (!read_string(reader, name, sizeof(name))) return 0;
+
+        if (type == TAG_STRING && strcmp(name, "id") == 0) {
+            if (!read_string(reader, id, idSize)) return 0;
+
+            hasId = 1;
+        } else if (type == TAG_INT && strcmp(name, "x") == 0) {
+            if (!read_i32(reader, x)) return 0;
+
+            hasX = 1;
+        } else if (type == TAG_INT && strcmp(name, "y") == 0) {
+            if (!read_i32(reader, y)) return 0;
+
+            hasY = 1;
+        } else if (type == TAG_INT && strcmp(name, "z") == 0) {
+            if (!read_i32(reader, z)) return 0;
+
+            hasZ = 1;
+        } else if (!skip_payload(reader, type)) {
+            return 0;
+        }
+    }
+
+    return hasId && hasX && hasY && hasZ;
+}
+
+// read block entities thingy and send each entry to the callback
+static int readBlockEntityList(NbtReader *reader, BlockEntityCallback callback, void *context) {
+    uint8_t objType;
+    int32_t count;
+
+    if (!read_u8(reader, &objType) || !read_i32(reader, &count) || objType != TAG_COMPOUND || count < 0) return 0;
+
+    for (int32_t i = 0; i < count; ++i) {
+        char id[128];
+        int32_t x;
+        int32_t y;
+        int32_t z;
+
+        if (!readBlockEntity(reader, id, sizeof(id), &x, &y, &z)) return 0;
+
+        callback(id, x, y, z, context);
+    }
+
+    return 1;
+}
+
+// find the chunk's block_entities list without decoding block states
+int nbtFindBlockEntities(const unsigned char *data, size_t size, BlockEntityCallback callback, void *context) {
+    NbtReader reader = { data, size, 0 };
+    uint8_t rootType;
+
+    if (!read_u8(&reader, &rootType) || rootType != TAG_COMPOUND || !skip_string(&reader)) return 0;
+
+    for (;;) {
+        uint8_t type;
+
+        if (!read_u8(&reader, &type)) return 0;
+        if (type == TAG_END) return 1;
+
+        char name[64];
+        if (!read_string(&reader, name, sizeof(name))) return 0;
+
+        if (type == TAG_LIST && strcmp(name, "block_entities") == 0) {
+            if (!readBlockEntityList(&reader, callback, context)) return 0;
+        } else if (!skip_payload(&reader, type)) {
+            return 0;
+        }
+    }
+}
