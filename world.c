@@ -197,8 +197,15 @@ static int scanChunk(FILE *file, const char *regionPath, int32_t chunkX, int32_t
         free(payload);
 
         char extChunkPath[MAX_PATH];
+        const char *lastSlash = strrchr(regionPath, '/'); // find the last directory separator in region path to separate folder path from filename
 
-        snprintf(extChunkPath, sizeof(extChunkPath), "%.*s/c.%d.%d.mcc", (int) (strrchr(regionPath, '/') - regionPath), regionPath, chunkX, chunkZ);
+        if (lastSlash) {
+            int dirLen = (int) (lastSlash - regionPath);
+
+            snprintf(extChunkPath, sizeof(extChunkPath), "%.*s/c.%d.%d.mcc", dirLen, regionPath, chunkX, chunkZ);
+        } else {
+            snprintf(extChunkPath, sizeof(extChunkPath), "c.%d.%d.mcc", chunkX, chunkZ);
+        }
 
         FILE *extChunkFile = fopen(extChunkPath, "rb");
         if (!extChunkFile) return 1;
