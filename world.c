@@ -1,4 +1,5 @@
 #include "nbtReader.h"
+#include "world.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -140,4 +141,83 @@ static int decompressChunk(uint8_t compression, const unsigned char *input, size
         default:
             return 0;
     }
+}
+
+static int scanChunk(FILE *file, const char *regionPath, int32_t chunkX, int32_t chunkZ, int localX, int localZ, WorldEntityCallback callback, void *context) {
+    int index = localX + localZ * REGION_SIZE;
+
+    if (fseek(file, index * 4L, SEEK_SET) != 0) return 0;
+
+    uint32_t location = read_u32(file);
+    if (!location) return 1;
+
+    uint32_t sectorOffset = location >> 8;
+    uint32_t sectorCount = location & 0xFF;
+    if (!sectorOffset || !sectorCount) return 1;
+
+    if (fseek(file, (long) sectorOffset * SECTOR_SIZE, SEEK_SET) != 0) return 0;
+
+    uint32_t length = read_u32(file);
+    if (length < 1 || length > sectorCount * SECTOR_SIZE - 4) return 0;
+
+    uint8_t compression;
+    if (fread(&compression, 1, 1, file) != 1) return 0;
+
+    size_t payloadSize = length - 1;
+    unsigned char *payload = malloc(payloadSize);
+
+    if (!payload) return 0;
+    if (fread(payload, 1, payloadSize, file) != payloadSize) {
+        free(payload);
+
+        return 0;
+    }
+
+    if (compression & 0x80) {
+        free(payload);
+
+        char extChunkPath[MAX_PATH];
+
+        snprintf(extChunkPath, sizeof(extChunkPath), "%.*s/c.%d.%d.mcc", (int) (strrchr(regionPath, '/') - regionPath), regionPath, chunkX, chunkZ);
+
+        FILE *extChunkFile = fopen(extChunkPath, "rb");
+        if (!extChunkFile) return 1;
+
+        fseek(extChunkFile, 0, SEEK_END);
+
+        long extChunkSize = ftell(extChunkFile);
+
+        fseek(extChunkFile, 0, SEEK_SET);
+        if (extChunkSize <= 0) {
+            fclose(extChunkFile);
+
+            return 0;
+        }
+
+        payloadSize = (size_t) extChunkSize;
+        payload = malloc(payloadSize);
+        if (!payload || fread(payload, 1, payloadSize, extChunkFile) != payloadSize) {
+            fclose(extChunkFile);
+            free(payload);
+
+            return 0;
+        }
+
+        fclose(extChunkFile);
+
+        compression &= 0x7F; // mask off 0x80 flag to isolate algorithm (1 = GZip, 2 = Zlib, 4 = LZ4)
+    }
+
+    unsigned char *nbt = NULL;
+    size_t nbtSize = 0;
+    int ok = decompressChunk(compression, payload, payloadSize, &nbt, &nbtSize);
+
+    free(payload);
+    if (!ok) return 0;
+
+    ok = nbtFindBlockEntities(nbt, nbtSize, callback, context);
+
+    free(nbt);
+
+    return ok;
 }
