@@ -265,7 +265,7 @@ static int scanRegion(const char *worldPath, int32_t regionX, int32_t regionZ, i
     for (int32_t z = startZ; z <= endZ; ++z)
         for (int32_t x = startX; x <= endX; ++x)
             if (!scanChunk(file, path, x, z, mod32(x), mod32(z), callback, context))
-                fprintf(stderr, "Oh noes! Could not parse the chunk %d %d in %s\n", x, z, path);
+                fprintf(stderr, "Oh noes! Could not parse the chunk %d %d\n", x, z);
 
     fclose(file);
     return 1;
