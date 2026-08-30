@@ -74,7 +74,7 @@ static int inflateData(const unsigned char *input, size_t inputSize, int gzip, u
         }
 
         stream.next_out = buffer + stream.total_out;
-        stream.avail_out = (uInt) capacity - stream.total_out;
+        stream.avail_out = (uInt) (capacity - stream.total_out);
 
         int result = inflate(&stream, Z_NO_FLUSH);
         if (result == Z_STREAM_END) break;
