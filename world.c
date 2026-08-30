@@ -6,6 +6,10 @@
 #include <zlib.h>
 #include <lz4.h>
 
+#define SECTOR_SIZE 4096
+#define REGION_SIZE 32
+#define MAX_PATH 4096
+
 // read a bigendian uint32 from a region file
 static uint32_t read_u32(FILE *file) {
     unsigned char b[4];
