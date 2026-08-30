@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-static int parse_int(const char *text, int32_t *value) {
+static int parseInt(const char *text, int32_t *value) {
     char *end;
     long long parsed = strtoll(text, &end, 10);
 
@@ -33,7 +33,7 @@ int main(int argc, char **argv) {
     int32_t x2;
     int32_t z2;
 
-    if (!parse_int(argv[2], &x1) || !parse_int(argv[3], &z1) || !parse_int(argv[4], &x2) || !parse_int(argv[5], &z2)) {
+    if (!parseInt(argv[2], &x1) || !parseInt(argv[3], &z1) || !parseInt(argv[4], &x2) || !parseInt(argv[5], &z2)) {
         fprintf(stderr, "Invalid chunk coordinate!\n");
 
         return 1;
