@@ -6,6 +6,7 @@
 #include <string.h>
 #include <zlib.h>
 #include <lz4.h>
+#include <errno.h>
 
 #define SECTOR_SIZE 4096
 #define REGION_SIZE 32
@@ -235,4 +236,47 @@ static int scanChunk(FILE *file, const char *regionPath, int32_t chunkX, int32_t
     free(nbt);
 
     return ok;
+}
+
+// scan the requested chunks inside a region file
+static int scanRegion(const char *worldPath, int32_t regionX, int32_t regionZ, int32_t minX, int32_t minZ, int32_t maxX, int32_t maxZ, WorldEntityCallback callback, void *context) {
+    char path[MAX_PATH];
+
+    snprintf(path, sizeof(path), "%s/dimensions/minecraft/overworld/region/r.%d.%d.mca", worldPath, regionX, regionZ);
+
+    FILE *file = fopen(path, "rb");
+    if (!file) {
+        if (errno == ENOENT) return 1;
+
+        fprintf(stderr, "HEY! Could not open %s: %s\n", path, strerror(errno));
+
+        return 0;
+    }
+
+    int32_t startX = minX > regionX * 32 ? minX : regionX * 32;
+    int32_t endX = maxX < regionX * 32 + 31 ? maxX : regionX * 32 + 31;
+    int32_t startZ = minZ > regionZ * 32 ? minZ : regionZ * 32;
+    int32_t endZ = maxZ < regionZ * 32 + 31 ? maxZ : regionZ * 32 + 31;
+
+    for (int32_t z = startZ; z <= endZ; ++z)
+        for (int32_t x = startX; x <= endX; ++x)
+            if (!scanChunk(file, path, x, z, mod32(x), mod32(z), callback, context))
+                fprintf(stderr, "Oh noes! Could not parse the chunk %d %d in %s\n", x, z, path);
+
+    fclose(file);
+    return 1;
+}
+
+// scan every region touched by the selected area
+int worldScan(const char *worldPath, int32_t minChunkX, int32_t minChunkZ, int32_t maxChunkX, int32_t maxChunkZ, WorldEntityCallback callback, void *context) {
+    int32_t firstRegionX = floor_div32(minChunkX);
+    int32_t lastRegionX = floor_div32(maxChunkX);
+    int32_t firstRegionZ = floor_div32(minChunkZ);
+    int32_t lastRegionZ = floor_div32(maxChunkZ);
+
+    for (int32_t regionZ = firstRegionZ; regionZ <= lastRegionZ; ++regionZ)
+        for (int32_t regionX = firstRegionX; regionX <= lastRegionX; ++regionX)
+            if (!scanRegion(worldPath, regionX, regionZ, minChunkX, minChunkZ, maxChunkX, maxChunkZ, callback, context)) return 0;
+
+    return 1;
 }
