@@ -115,3 +115,25 @@ static int inflateLZ4(const unsigned char *input, size_t inputSize, unsigned cha
 
     return 1;
 }
+
+static int decompressChunk(uint8_t compression, const unsigned char *input, size_t inputSize, unsigned char **output, size_t *outputSize) {
+    switch (compression) {
+        case 1:
+            return inflateData(input, inputSize, 1, output, outputSize);
+        case 2:
+            return inflateData(input, inputSize, 0, output, outputSize);
+        case 3:
+            *output = malloc(inputSize);
+
+            if (!*output) return 0;
+
+            memcpy(*output, input, inputSize);
+            *outputSize = inputSize;
+
+            return 1;
+        case 4:
+            return inflateLZ4(input, inputSize, output, outputSize);
+        default:
+            return 0;
+    }
+}
