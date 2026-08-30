@@ -1,5 +1,6 @@
+#include "world.h"
+#include <string.h>
 #include <stdio.h>
-
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -13,11 +14,18 @@ static int parse_int(const char *text, int32_t *value) {
     return 1;
 }
 
+
+static void displayContainers(const char *id, int32_t x, int32_t y, int32_t z, void *context) {
+    (void) context;
+
+    if (strcmp(id, "minecraft:chest") == 0) printf("chest: %d %d %d\n", x, y, z); else if (strcmp(id, "minecraft:barrel") == 0) printf("barrel: %d %d %d\n", x, y, z);
+}
+
 int main(int argc, char **argv) {
     if (argc != 6) {
         fprintf(stderr, "Usage: %s <world> <chunkX1> <chunkZ1> <chunkX2> <chunkZ2>\n", argv[0]);
 
-        return 0;
+        return 1;
     }
 
     int32_t x1;
@@ -28,7 +36,7 @@ int main(int argc, char **argv) {
     if (!parse_int(argv[2], &x1) || !parse_int(argv[3], &z1) || !parse_int(argv[4], &x2) || !parse_int(argv[5], &z2)) {
         fprintf(stderr, "Invalid chunk coordinate!\n");
 
-        return 0;
+        return 1;
     }
 
     int32_t min_x = x1 < x2 ? x1 : x2;
@@ -36,7 +44,5 @@ int main(int argc, char **argv) {
     int32_t min_z = z1 < z2 ? z1 : z2;
     int32_t max_z = z1 > z2 ? z1 : z2;
 
-    fprintf(stderr, "mins & maxes: %d %d %d %d\n", min_x, min_z, max_x, max_z);
-
-    return 0;
+    return worldScan(argv[1], min_x, min_z, max_x, max_z, displayContainers, NULL) ? 0 : 1;
 }
