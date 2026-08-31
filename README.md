@@ -8,3 +8,7 @@ A little tool for grabbing a Minecraft world, cutting a part of it, getting its 
 - [Minecraft Wiki's NBT Format](https://minecraft.wiki/w/NBT_format)
 - [Minecraft Wiki's Chunk Format](https://minecraft.wiki/w/Chunk_format)
 - [Minecraft Wiki's Anvil Format](https://minecraft.wiki/w/Anvil_file_format)
+
+## dependencies
+
+- Needs zlib & lz4!
